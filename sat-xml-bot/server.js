@@ -308,7 +308,7 @@ for (const concepto of listaConceptos) {
 // PUERTO
 // ============================
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3007;
 
 app.listen(PORT, () => {
 
