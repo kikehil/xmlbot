@@ -16,7 +16,10 @@ define('DB_NAME', 'sat_xml_bot');
 define('DB_PORT', 3306);
 
 // Configuración de la API del Scraper (NodeJS)
-define('SCRAPER_API_URL', 'http://localhost:3002');
+$isLocal = isset($_SERVER['HTTP_HOST']) && (in_array($_SERVER['HTTP_HOST'], ['localhost', '127.0.0.1']) || strpos($_SERVER['HTTP_HOST'], '192.168.') !== false);
+$node_port = $isLocal ? '3002' : '3006';
+define('SCRAPER_API_URL', 'http://localhost:' . $node_port);
+
 
 /**
  * Obtiene la conexión PDO a la base de datos.
