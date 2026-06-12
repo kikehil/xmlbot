@@ -1,0 +1,47 @@
+<!-- Sidebar -->
+<aside class="sidebar">
+    <!-- Brand / Logo -->
+    <div class="brand-section">
+        <div class="brand-logo">
+            <i class="fa-solid fa-bolt text-white"></i>
+        </div>
+        <span class="brand-name">XMLBoot</span>
+    </div>
+
+    <!-- Menú de Navegación -->
+    <nav class="menu-section">
+        <a href="/" class="menu-item <%= view === 'dashboard' ? 'active' : '' %>">
+            <i class="fa-solid fa-chart-pie"></i> Dashboard Fiscal
+        </a>
+        
+        <a href="/descargar" class="menu-item <%= view === 'descargar' ? 'active' : '' %>">
+            <i class="fa-solid fa-cloud-arrow-down"></i> Descargar XML
+        </a>
+        
+        <a href="/facturas" class="menu-item <%= view === 'facturas' ? 'active' : '' %>">
+            <i class="fa-solid fa-file-invoice-dollar"></i> Explorador CFDI
+        </a>
+
+        <a href="/tramites" class="menu-item <%= view === 'tramites' ? 'active' : '' %>">
+            <i class="fa-solid fa-file-invoice"></i> Trámites SAT
+        </a>
+
+        <a href="/contribuyentes" class="menu-item <%= view === 'contribuyentes' ? 'active' : '' %>">
+            <i class="fa-solid fa-users-gear"></i> Mis Contribuyentes
+        </a>
+    </nav>
+
+    <!-- Sección de Usuario -->
+    <div class="user-section">
+        <div class="user-info">
+            <span class="user-name" title="<%= userEmail %>">
+                <%= userEmail.split('@')[0] %>
+            </span>
+            <span class="user-role">Contador Administrador</span>
+        </div>
+        <a href="/logout" class="logout-icon" title="Cerrar Sesión">
+            <i class="fa-solid fa-power-off"></i>
+        </a>
+    </div>
+</aside>
+<main class="main-content">

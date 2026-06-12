@@ -1,0 +1,156 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar', { view: 'facturas', userEmail: userEmail }) %>
+
+<div class="view-header">
+    <div>
+        <h1 class="view-title">Explorador CFDI</h1>
+        <p class="view-subtitle">Consulte, filtre y exporte todos los comprobantes fiscales almacenados en MySQL</p>
+    </div>
+    <div>
+        <button onclick="exportTableToExcel('cfdiTable', 'XMLBoot_CFDI_Reporte')" class="btn btn-premium">
+            <i class="fa-solid fa-file-excel me-2"></i> Exportar a Excel
+        </button>
+    </div>
+</div>
+
+<!-- Tarjeta de Filtros Avanzados -->
+<div class="glass-panel p-4 mb-4">
+    <h5 class="fw-bold mb-3 text-info"><i class="fa-solid fa-filter me-2"></i> Filtros de Búsqueda</h5>
+    
+    <form method="GET" action="/facturas" class="row g-3">
+        <!-- Rango de Fechas -->
+        <div class="col-md-3">
+            <label for="f_inicio" class="form-label form-label-premium">Fecha Inicio</label>
+            <input type="date" name="f_inicio" id="f_inicio" class="form-control form-control-premium" value="<%= f_inicio %>">
+        </div>
+        <div class="col-md-3">
+            <label for="f_fin" class="form-label form-label-premium">Fecha Fin</label>
+            <input type="date" name="f_fin" id="f_fin" class="form-control form-control-premium" value="<%= f_fin %>">
+        </div>
+
+        <!-- Emitter (Emisor) -->
+        <div class="col-md-3">
+            <label for="f_emisor" class="form-label form-label-premium">Emisor (RFC)</label>
+            <select name="f_emisor" id="f_emisor" class="form-select form-control-premium">
+                <option value="">-- Todos --</option>
+                <% emisores.forEach(function(emi) { %>
+                    <option value="<%= emi.rfc_emisor %>" <%= f_emisor === emi.rfc_emisor ? 'selected' : '' %>>
+                        <%= emi.rfc_emisor %> - <%= emi.emisor.substring(0, 20) %>...
+                    </option>
+                <% }); %>
+            </select>
+        </div>
+
+        <!-- Moneda -->
+        <div class="col-md-1.5">
+            <label for="f_moneda" class="form-label form-label-premium">Moneda</label>
+            <select name="f_moneda" id="f_moneda" class="form-select form-control-premium">
+                <option value="">-- Todas --</option>
+                <option value="MXN" <%= f_moneda === 'MXN' ? 'selected' : '' %>>MXN</option>
+                <option value="USD" <%= f_moneda === 'USD' ? 'selected' : '' %>>USD</option>
+                <option value="XXX" <%= f_moneda === 'XXX' ? 'selected' : '' %>>XXX</option>
+            </select>
+        </div>
+
+        <!-- Tipo Comprobante -->
+        <div class="col-md-1.5">
+            <label for="f_tipo" class="form-label form-label-premium">Tipo</label>
+            <select name="f_tipo" id="f_tipo" class="form-select form-control-premium">
+                <option value="">-- Todos --</option>
+                <option value="I" <%= f_tipo === 'I' ? 'selected' : '' %>>Ingreso (I)</option>
+                <option value="E" <%= f_tipo === 'E' ? 'selected' : '' %>>Egreso (E)</option>
+                <option value="T" <%= f_tipo === 'T' ? 'selected' : '' %>>Traslado (T)</option>
+            </select>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="col-12 d-flex justify-content-end gap-2 mt-4">
+            <a href="/facturas" class="btn btn-premium-outline">
+                <i class="fa-solid fa-broom me-2"></i> Limpiar Filtros
+            </a>
+            <button type="submit" class="btn btn-premium">
+                <i class="fa-solid fa-magnifying-glass me-2"></i> Aplicar Filtros
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Tabla Datatable de Facturas -->
+<div class="glass-panel p-4">
+    <div class="table-responsive">
+        <table id="cfdiTable" class="table table-premium table-dark table-hover w-100 align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>UUID</th>
+                    <th>Fecha Emisión</th>
+                    <th>RFC Emisor</th>
+                    <th>Emisor</th>
+                    <th>RFC Receptor</th>
+                    <th class="text-center">Tipo</th>
+                    <th>Uso CFDI</th>
+                    <th>Método</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-center">Moneda</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% facturas.forEach(function(f) { 
+                    var tipo = f.tipo_comprobante || 'I';
+                    var badge_class = 'badge-ingreso';
+                    var tipo_lbl = 'Ingreso';
+                    if (tipo === 'E') {
+                        badge_class = 'badge-egreso';
+                        tipo_lbl = 'Egreso';
+                    } else if (tipo === 'T') {
+                        badge_class = 'badge-traslado';
+                        tipo_lbl = 'Traslado';
+                    }
+                %>
+                    <tr>
+                        <td class="font-monospace text-light small" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= f.uuid %>">
+                            <%= f.uuid %>
+                        </td>
+                        <td class="small text-secondary"><%= f.fecha_emision ? new Date(f.fecha_emision).toISOString().replace('T', ' ').substring(0, 16) : 'N/D' %></td>
+                        <td class="font-monospace text-white small"><%= f.rfc_emisor %></td>
+                        <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<%= f.emisor %>">
+                            <%= f.emisor %>
+                        </td>
+                        <td class="font-monospace text-secondary small"><%= f.rfc_receptor %></td>
+                        <td class="text-center">
+                            <span class="badge-custom <%= badge_class %>">
+                                <%= tipo_lbl %>
+                            </span>
+                        </td>
+                        <td class="font-monospace text-secondary text-center small"><%= f.uso_cfdi || 'N/D' %></td>
+                        <td class="font-monospace text-secondary text-center small"><%= f.metodo_pago || 'N/D' %></td>
+                        <td class="text-end fw-bold text-white">$<%= parseFloat(f.total).toFixed(2) %></td>
+                        <td class="text-center text-light fw-bold"><%= f.moneda %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Inicializar Datatables con traducción al español y estilo premium una vez cargue jQuery
+    document.addEventListener('DOMContentLoaded', () => {
+        $('#cfdiTable').DataTable({
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+            },
+            pageLength: 10,
+            order: [[1, 'desc']], // Ordenar por Fecha Emisión por defecto
+            columnDefs: [
+                { orderable: false, targets: [0, 6, 7] } // Quitar flechas de ordenar para campos no ordenables
+            ],
+            drawCallback: function() {
+                // Ajustar paginador y buscador de Datatable a estilos de Bootstrap 5 y modo oscuro
+                $('.dataTables_filter input').addClass('form-control-premium form-control-sm');
+                $('.dataTables_length select').addClass('form-control-premium form-control-sm');
+            }
+        });
+    });
+</script>
+
+<%- include('partials/footer') %>

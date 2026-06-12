@@ -1,0 +1,33 @@
+# Node.js
+node_modules/
+**/node_modules/
+
+# Environment files
+.env
+**/.env
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+**/*.log
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Playwright screenshots and test results
+test-results/
+**/*.png
+**/*.jpg
+**/*.jpeg
+
+# XML and downloaded files
+/xml/
+/xml/*
+/sat-xml-bot/uploads/*
+/sat-xml-bot/xml/*
+/sat-xml-bot/xmls/*
+/sat-bot/public/downloads/documentos/*
+!/sat-bot/public/downloads/documentos/.gitkeep

@@ -1,0 +1,330 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar', { view: 'contribuyentes', userEmail: userEmail }) %>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="view-header">
+    <div>
+        <h1 class="view-title">Mis Contribuyentes</h1>
+        <p class="view-subtitle">Gestione la cartera de clientes y sus credenciales de acceso del SAT para descargas automáticas</p>
+    </div>
+    <div>
+        <button class="btn btn-premium" data-bs-toggle="modal" data-bs-target="#addContribuyenteModal">
+            <i class="fa-solid fa-plus me-2"></i> Nuevo Contribuyente
+        </button>
+    </div>
+</div>
+
+<!-- Tabla de Contribuyentes -->
+<div class="glass-panel p-4">
+    <div class="table-responsive">
+        <table id="contribuyentesTable" class="table table-premium table-dark table-hover w-100 align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Razón Social / Nombre</th>
+                    <th>RFC</th>
+                    <th>Contraseña SAT (CIEC)</th>
+                    <th class="text-center">Firma Electrónica</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% contribuyentes.forEach(function(c) { %>
+                    <tr data-id="<%= c.id %>" data-rfc="<%= c.rfc %>" data-razon="<%= c.razon_social %>" data-ciec="<%= c.ciec_password %>" data-pwd-key="<%= c.private_key_password || '' %>">
+                        <td class="fw-bold text-light"><%= c.razon_social %></td>
+                        <td class="font-monospace text-white"><%= c.rfc %></td>
+                        <td class="font-monospace text-secondary" style="cursor: pointer;">
+                            <span class="password-toggle" onclick="togglePassword(this)">••••••••</span>
+                            <span class="password-text d-none"><%= c.ciec_password %></span>
+                        </td>
+                        <td class="text-center">
+                            <% if (c.cer_file || c.key_file) { %>
+                                <span class="badge-custom badge-ingreso"><i class="fa-solid fa-file-shield me-1"></i> Cargada</span>
+                            <% } else { %>
+                                <span class="badge-custom badge-egreso">No configurada</span>
+                            <% } %>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center gap-2">
+                                <button class="btn btn-sm btn-premium-outline py-1 px-2 btn-edit" onclick="openEditModal(this)" title="Editar">
+                                    <i class="fa-regular fa-pen-to-square"></i>
+                                </button>
+                                <button class="btn btn-sm btn-premium py-1 px-2 btn-delete" onclick="deleteContribuyente(<%= c.id %>, '<%= c.razon_social %>')" title="Eliminar">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Agregar Contribuyente -->
+<div class="modal fade" id="addContribuyenteModal" tabindex="-1" aria-labelledby="addContribuyenteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-panel border border-secondary border-opacity-25" style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px);">
+            <div class="modal-header border-bottom border-secondary border-opacity-10">
+                <h5 class="modal-title fw-bold text-white" id="addContribuyenteModalLabel"><i class="fa-solid fa-user-plus me-2 text-info"></i> Nuevo Contribuyente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="addContribuyenteForm">
+                <div class="modal-body text-start">
+                    <div class="mb-3">
+                        <label for="add_razon" class="form-label form-label-premium">Razón Social / Nombre Completo</label>
+                        <input type="text" id="add_razon" class="form-control form-control-premium" placeholder="Ej. Juan Pérez o Empresa S.A." required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_rfc" class="form-label form-label-premium">RFC</label>
+                        <input type="text" id="add_rfc" class="form-control form-control-premium text-uppercase font-monospace" placeholder="ABCD123456XYZ" required maxlength="13">
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_ciec" class="form-label form-label-premium">Contraseña SAT (CIEC)</label>
+                        <input type="password" id="add_ciec" class="form-control form-control-premium" placeholder="••••••••" required>
+                    </div>
+                    
+                    <div class="border-top border-secondary border-opacity-10 my-4 pt-3">
+                        <h6 class="fw-bold text-secondary text-uppercase tracking-wider" style="font-size: 11px;"><i class="fa-solid fa-file-signature me-1"></i> Firma Electrónica (Opcional)</h6>
+                        <div class="mb-2 text-muted" style="font-size: 11px;">Nota: No se requiere subir los archivos para descarga de XML, basta con la contraseña CIEC arriba.</div>
+                        <div class="mb-3">
+                            <label for="add_pwd_key" class="form-label form-label-premium">Contraseña Clave Privada (e.firma)</label>
+                            <input type="password" id="add_pwd_key" class="form-control form-control-premium" placeholder="Opcional">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-10">
+                    <button type="button" class="btn btn-premium-outline" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-premium">Guardar Cliente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Editar Contribuyente -->
+<div class="modal fade" id="editContribuyenteModal" tabindex="-1" aria-labelledby="editContribuyenteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-panel border border-secondary border-opacity-25" style="background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px);">
+            <div class="modal-header border-bottom border-secondary border-opacity-10">
+                <h5 class="modal-title fw-bold text-white" id="editContribuyenteModalLabel"><i class="fa-solid fa-user-pen me-2 text-info"></i> Editar Contribuyente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editContribuyenteForm">
+                <input type="hidden" id="edit_id">
+                <div class="modal-body text-start">
+                    <div class="mb-3">
+                        <label for="edit_razon" class="form-label form-label-premium">Razón Social / Nombre Completo</label>
+                        <input type="text" id="edit_razon" class="form-control form-control-premium" placeholder="Ej. Juan Pérez o Empresa S.A." required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_rfc" class="form-label form-label-premium">RFC</label>
+                        <input type="text" id="edit_rfc" class="form-control form-control-premium text-uppercase font-monospace" placeholder="ABCD123456XYZ" required maxlength="13">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_ciec" class="form-label form-label-premium">Contraseña SAT (CIEC)</label>
+                        <input type="password" id="edit_ciec" class="form-control form-control-premium" placeholder="••••••••" required>
+                    </div>
+                    
+                    <div class="border-top border-secondary border-opacity-10 my-4 pt-3">
+                        <h6 class="fw-bold text-secondary text-uppercase tracking-wider" style="font-size: 11px;"><i class="fa-solid fa-file-signature me-1"></i> Firma Electrónica (Opcional)</h6>
+                        <div class="mb-3">
+                            <label for="edit_pwd_key" class="form-label form-label-premium">Contraseña Clave Privada (e.firma)</label>
+                            <input type="password" id="edit_pwd_key" class="form-control form-control-premium" placeholder="Opcional">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-secondary border-opacity-10">
+                    <button type="button" class="btn btn-premium-outline" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-premium">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Inicializar Datatable de contribuyentes
+        $('#contribuyentesTable').DataTable({
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json'
+            },
+            pageLength: 10,
+            columnDefs: [
+                { orderable: false, targets: [2, 3, 4] }
+            ],
+            drawCallback: function() {
+                $('.dataTables_filter input').addClass('form-control-premium form-control-sm');
+                $('.dataTables_length select').addClass('form-control-premium form-control-sm');
+            }
+        });
+
+        // Intercept Form Submit: Agregar
+        document.getElementById('addContribuyenteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const razon_social = document.getElementById('add_razon').value;
+            const rfc = document.getElementById('add_rfc').value;
+            const ciec_password = document.getElementById('add_ciec').value;
+            const private_key_password = document.getElementById('add_pwd_key').value;
+
+            try {
+                const response = await fetch('/api/contribuyentes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rfc, razon_social, ciec_password, private_key_password })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: 'Contribuyente agregado correctamente.',
+                        icon: 'success',
+                        background: '#0d172f',
+                        color: '#fff',
+                        confirmButtonColor: '#00f2fe'
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.error,
+                        icon: 'error',
+                        background: '#0d172f',
+                        color: '#fff'
+                    });
+                }
+            } catch (err) {
+                Swal.fire({
+                    title: 'Error de Red',
+                    text: err.message,
+                    icon: 'error',
+                    background: '#0d172f',
+                    color: '#fff'
+                });
+            }
+        });
+
+        // Intercept Form Submit: Editar
+        document.getElementById('editContribuyenteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit_id').value;
+            const razon_social = document.getElementById('edit_razon').value;
+            const rfc = document.getElementById('edit_rfc').value;
+            const ciec_password = document.getElementById('edit_ciec').value;
+            const private_key_password = document.getElementById('edit_pwd_key').value;
+
+            try {
+                const response = await fetch(`/api/contribuyentes/edit/${id}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rfc, razon_social, ciec_password, private_key_password })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: 'Contribuyente actualizado correctamente.',
+                        icon: 'success',
+                        background: '#0d172f',
+                        color: '#fff',
+                        confirmButtonColor: '#00f2fe'
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.error,
+                        icon: 'error',
+                        background: '#0d172f',
+                        color: '#fff'
+                    });
+                }
+            } catch (err) {
+                Swal.fire({
+                    title: 'Error de Red',
+                    text: err.message,
+                    icon: 'error',
+                    background: '#0d172f',
+                    color: '#fff'
+                });
+            }
+        });
+    });
+
+    // Toggle Mostrar/Ocultar contraseña CIEC
+    function togglePassword(element) {
+        const row = element.closest('tr');
+        const textSpan = row.querySelector('.password-text');
+        if (element.innerText === '••••••••') {
+            element.innerText = textSpan.innerText;
+        } else {
+            element.innerText = '••••••••';
+        }
+    }
+
+    // Cargar datos en el Modal de Editar
+    function openEditModal(button) {
+        const row = button.closest('tr');
+        document.getElementById('edit_id').value = row.dataset.id;
+        document.getElementById('edit_razon').value = row.dataset.razon;
+        document.getElementById('edit_rfc').value = row.dataset.rfc;
+        document.getElementById('edit_ciec').value = row.dataset.ciec;
+        document.getElementById('edit_pwd_key').value = row.dataset.pwdKey;
+
+        // Abrir modal usando Bootstrap API
+        const modal = new bootstrap.Modal(document.getElementById('editContribuyenteModal'));
+        modal.show();
+    }
+
+    // Eliminar contribuyente con alerta SweetAlert2
+    function deleteContribuyente(id, name) {
+        Swal.fire({
+            title: '¿Está seguro?',
+            text: `Eliminará al contribuyente "${name}". Esta acción no se puede deshacer.`,
+            icon: 'warning',
+            showCancelButton: true,
+            background: '#0d172f',
+            color: '#fff',
+            confirmButtonColor: '#ff5858',
+            cancelButtonColor: '#0f172a',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch(`/api/contribuyentes/delete/${id}`, {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        Swal.fire({
+                            title: '¡Eliminado!',
+                            text: 'El cliente ha sido eliminado.',
+                            icon: 'success',
+                            background: '#0d172f',
+                            color: '#fff',
+                            confirmButtonColor: '#00f2fe'
+                        }).then(() => location.reload());
+                    } else {
+                        Swal.fire({
+                            title: 'Error',
+                            text: data.error,
+                            icon: 'error',
+                            background: '#0d172f',
+                            color: '#fff'
+                        });
+                    }
+                } catch (err) {
+                    Swal.fire({
+                        title: 'Error de Red',
+                        text: err.message,
+                        icon: 'error',
+                        background: '#0d172f',
+                        color: '#fff'
+                    });
+                }
+            }
+        });
+    }
+</script>
+
+<%- include('partials/footer') %>

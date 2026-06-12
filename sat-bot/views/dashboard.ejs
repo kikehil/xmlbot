@@ -1,0 +1,165 @@
+<%- include('partials/header') %>
+<%- include('partials/sidebar', { view: 'dashboard', userEmail: userEmail }) %>
+
+<div class="view-header">
+    <div>
+        <h1 class="view-title">Dashboard Fiscal</h1>
+        <p class="view-subtitle">Análisis inteligente e indicadores clave de tus CFDI en tiempo real</p>
+    </div>
+    <div>
+        <a href="/descargar" class="btn btn-premium">
+            <i class="fa-solid fa-cloud-arrow-down me-2"></i> Descargar Nuevos XML
+        </a>
+    </div>
+</div>
+
+<!-- Fila de Tarjetas Métricas -->
+<div class="row g-4 mb-5">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-data">
+                <span class="metric-label">Comprobantes Procesados</span>
+                <span class="metric-value"><%= totalComprobantes %></span>
+            </div>
+            <div class="metric-icon">
+                <i class="fa-solid fa-file-invoice"></i>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-data">
+                <span class="metric-label">Acumulado Fiscal</span>
+                <span class="metric-value">$<%= sumaTotal %></span>
+            </div>
+            <div class="metric-icon" style="color: #00b09b;">
+                <i class="fa-solid fa-money-bill-trend-up"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-data">
+                <span class="metric-label">Proveedores (Emisores)</span>
+                <span class="metric-value"><%= totalEmisores %></span>
+            </div>
+            <div class="metric-icon" style="color: #4facfe;">
+                <i class="fa-solid fa-truck-field"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-data">
+                <span class="metric-label">Empresas (Receptores)</span>
+                <span class="metric-value"><%= totalReceptores %></span>
+            </div>
+            <div class="metric-icon" style="color: #f857a6;">
+                <i class="fa-solid fa-building"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Tabla de Últimos XMLs -->
+    <div class="col-lg-8">
+        <div class="glass-panel p-4" style="height: 100%;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold mb-0">Últimos CFDI Importados</h4>
+                <a href="/facturas" class="btn btn-premium-outline btn-sm" style="font-size: 12px; padding: 6px 12px;">Ver Todo</a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle border-0 mb-0" style="background: transparent;">
+                    <thead>
+                        <tr class="text-secondary" style="font-size: 12px; border-bottom: 1px solid var(--border-color);">
+                            <th class="py-3 border-0">RFC EMISOR</th>
+                            <th class="py-3 border-0">EMISOR</th>
+                            <th class="py-3 border-0 text-center">TIPO</th>
+                            <th class="py-3 border-0 text-end">TOTAL</th>
+                            <th class="py-3 border-0 text-end">FECHA EMISIÓN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (recentFacturas.length === 0) { %>
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-secondary">
+                                    <i class="fa-solid fa-folder-open fs-2 mb-3 d-block text-muted"></i>
+                                    No hay registros de facturas en la base de datos.<br>
+                                    Clica en <strong>Descargar XML</strong> para iniciar tu primera extracción del SAT.
+                                </td>
+                            </tr>
+                        <% } else { %>
+                            <% recentFacturas.forEach(function(factura) { 
+                                var tipo = factura.tipo_comprobante || 'I';
+                                var badge_class = 'badge-ingreso';
+                                var tipo_lbl = 'Ingreso';
+                                if (tipo === 'E') {
+                                    badge_class = 'badge-egreso';
+                                    tipo_lbl = 'Egreso';
+                                } else if (tipo === 'T') {
+                                    badge_class = 'badge-traslado';
+                                    tipo_lbl = 'Traslado';
+                                }
+                            %>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                    <td class="py-3 fw-bold text-light"><%= factura.rfc_emisor %></td>
+                                    <td class="py-3" style="max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= factura.emisor %></td>
+                                    <td class="py-3 text-center">
+                                        <span class="badge-custom <%= badge_class %>">
+                                            <%= tipo_lbl %>
+                                        </span>
+                                    </td>
+                                    <td class="py-3 text-end fw-bold text-white">$<%= parseFloat(factura.total).toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2}) %> <span class="small text-secondary"><%= factura.moneda %></span></td>
+                                    <td class="py-3 text-end text-secondary small"><%= new Date(factura.fecha_emision).toISOString().substring(0, 10) %></td>
+                                </tr>
+                            <% }); %>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Módulo Motor de Alertas / Anomalías -->
+    <div class="col-lg-4">
+        <div class="glass-panel p-4" style="height: 100%;">
+            <h4 class="fw-bold mb-3">Motor Inteligente CFDI</h4>
+            <p class="text-secondary small mb-4">Módulo integrado para auditoría de anomalías fiscales automatizadas.</p>
+
+            <div class="d-flex flex-column gap-3">
+                <div class="p-3 rounded-3" style="background: rgba(0, 242, 254, 0.04); border: 1px solid rgba(0, 242, 254, 0.1);">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fa-solid fa-circle-check" style="color: #00f2fe;"></i>
+                        <span class="fw-bold" style="font-size: 14.5px;">Anomalías de Duplicidad</span>
+                    </div>
+                    <span class="text-secondary small d-block">Busca facturas idénticas en fecha y monto para detectar dobles cobros.</span>
+                    <span class="badge bg-success mt-2 font-monospace" style="font-size: 10px;">0 Duplicados Encontrados</span>
+                </div>
+
+                <div class="p-3 rounded-3" style="background: rgba(248, 87, 166, 0.04); border: 1px solid rgba(248, 87, 166, 0.1);">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: #f857a6;"></i>
+                        <span class="fw-bold" style="font-size: 14.5px;">Proveedores EFOS / Lista Negra</span>
+                    </div>
+                    <span class="text-secondary small d-block">Cruza tus RFC emisores con la lista oficial del artículo 69-B del SAT.</span>
+                    <span class="badge bg-secondary mt-2 font-monospace" style="font-size: 10px;">Requiere Conexión EFOS</span>
+                </div>
+                
+                <div class="p-3 rounded-3" style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05);">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fa-solid fa-microchip text-secondary"></i>
+                        <span class="fw-bold" style="font-size: 14.5px;">Automatización Próxima</span>
+                    </div>
+                    <span class="text-secondary small d-block">Cuentas pendientes por pagar, conciliación de IVA trasladado vs acreditable.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,28 @@
+{
+  "name": "sat-bot",
+  "version": "1.0.0",
+  "description": "Background Playwright Scraping Service for XMLBoot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "ejs": "^5.0.2",
+    "express": "^4.19.2",
+    "express-session": "^1.19.0",
+    "fs-extra": "^11.3.5",
+    "mysql2": "^3.22.3",
+    "playwright": "^1.60.0",
+    "xml2js": "^0.6.2"
+  }
+}
