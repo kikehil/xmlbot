@@ -246,10 +246,23 @@ async function startSATSession(rfc, password, dbSessionId, dbConfig, actionType 
             page.waitForSelector('text=Captcha no válido', { timeout: 15000 }).then(() => 'captcha_incorrecto'),
             page.waitForSelector('text=RFC o contraseña', { timeout: 15000 }).then(() => 'credenciales_incorrectas'),
             page.waitForSelector('text=incorrectos', { timeout: 15000 }).then(() => 'credenciales_incorrectas'),
-            page.waitForSelector('text=Servicios de Factura', { timeout: 20000 }).then(() => 'login_ok')
+            page.waitForSelector('text=Servicios de Factura', { timeout: 20000 }).then(() => 'login_ok'),
+            page.waitForSelector('text=Generar Constancia', { timeout: 20000 }).then(() => 'login_ok'),
+            page.waitForSelector('text=Opinión de Cumplimiento', { timeout: 20000 }).then(() => 'login_ok'),
+            page.waitForSelector('text=Opinión del Cumplimiento', { timeout: 20000 }).then(() => 'login_ok'),
+            page.waitForURL(/portalcfdi|Reimpresion|reimprime|OpinionObligaciones/, { timeout: 20000 }).then(() => 'login_ok'),
+            page.waitForURL(/Error\.jsf/, { timeout: 15000 }).then(() => 'error_sat')
           ]).catch(async (err) => {
-            const content = await page.content();
-            if (content.includes('Servicios de Factura')) return 'login_ok';
+            const url = page.url();
+            if (/portalcfdi|Reimpresion|reimprime|OpinionObligaciones/.test(url)) {
+              return 'login_ok';
+            }
+            if (/Error\.jsf/.test(url)) {
+              return 'error_sat';
+            }
+
+            const content = await page.content().catch(() => '');
+            if (content.includes('Servicios de Factura') || content.includes('Generar Constancia') || content.includes('Opinión de Cumplimiento') || content.includes('Opinión del Cumplimiento')) return 'login_ok';
             if (content.includes('Captcha no válido')) return 'captcha_incorrecto';
             if (content.includes('incorrectos') || content.includes('no válido') || content.includes('no válidos') || content.includes('incorrecta')) return 'credenciales_incorrectas';
             
@@ -267,6 +280,11 @@ async function startSATSession(rfc, password, dbSessionId, dbConfig, actionType 
             autoSolved = true;
             console.log(`[Session ${dbSessionId}] ¡Login SAT completado con éxito mediante Gemini!`);
             break;
+          }
+
+          if (resultado === 'error_sat') {
+            console.log(`[Session ${dbSessionId}] Redirigido a página de error del SAT (Error.jsf).`);
+            throw new Error('El portal del SAT reportó un error de sesión (error.seg.0001). Intente nuevamente.');
           }
 
           if (resultado === 'credenciales_incorrectas') {
@@ -391,12 +409,23 @@ async function solveCaptchaAndLogin(session, captchaCode, dbSessionId, dbConfig)
       page.waitForSelector('text=Captcha no válido', { timeout: 15000 }).then(() => 'captcha_incorrecto'),
       page.waitForSelector('text=RFC o contraseña', { timeout: 15000 }).then(() => 'credenciales_incorrectas'),
       page.waitForSelector('text=incorrectos', { timeout: 15000 }).then(() => 'credenciales_incorrectas'),
-      page.waitForSelector('text=Servicios de Factura', { timeout: 20000 }).then(() => 'login_ok')
+      page.waitForSelector('text=Servicios de Factura', { timeout: 20000 }).then(() => 'login_ok'),
+      page.waitForSelector('text=Generar Constancia', { timeout: 20000 }).then(() => 'login_ok'),
+      page.waitForSelector('text=Opinión de Cumplimiento', { timeout: 20000 }).then(() => 'login_ok'),
+      page.waitForSelector('text=Opinión del Cumplimiento', { timeout: 20000 }).then(() => 'login_ok'),
+      page.waitForURL(/portalcfdi|Reimpresion|reimprime|OpinionObligaciones/, { timeout: 20000 }).then(() => 'login_ok'),
+      page.waitForURL(/Error\.jsf/, { timeout: 15000 }).then(() => 'error_sat')
     ]).catch(async (err) => {
-      // Si hay timeout pero el selector de "Servicios de Factura" o "Captcha no válido" no se gatilló,
-      // validamos manualmente el estado actual del dom o si redireccionó.
-      const content = await page.content();
-      if (content.includes('Servicios de Factura')) {
+      const url = page.url();
+      if (/portalcfdi|Reimpresion|reimprime|OpinionObligaciones/.test(url)) {
+        return 'login_ok';
+      }
+      if (/Error\.jsf/.test(url)) {
+        return 'error_sat';
+      }
+
+      const content = await page.content().catch(() => '');
+      if (content.includes('Servicios de Factura') || content.includes('Generar Constancia') || content.includes('Opinión de Cumplimiento') || content.includes('Opinión del Cumplimiento')) {
         return 'login_ok';
       }
       if (content.includes('Captcha no válido')) {
@@ -415,6 +444,21 @@ async function solveCaptchaAndLogin(session, captchaCode, dbSessionId, dbConfig)
       
       throw new Error(`Timeout o inestabilidad del SAT. Detalle: ${err.message}`);
     });
+
+    if (resultado === 'error_sat') {
+      console.log(`[Session ${dbSessionId}] Redirigido a página de error del SAT (Error.jsf).`);
+      
+      await connection.execute(`
+        UPDATE sat_sessions 
+        SET status = 'error', error_message = 'El portal del SAT reportó un error de sesión (error.seg.0001). Intente de nuevo.'
+        WHERE id = ?
+      `, [dbSessionId]);
+
+      await page.close();
+      await context.close();
+      
+      return { success: false, error: 'El SAT reportó un error de sesión (error.seg.0001).' };
+    }
 
     if (resultado === 'captcha_incorrecto') {
       console.log(`[Session ${dbSessionId}] Captcha incorrecto detectado.`);
