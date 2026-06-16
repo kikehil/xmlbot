@@ -4,6 +4,27 @@ import json
 # Importamos las funciones de nuestro scraper
 from scraper import extraer_reporte_generico, extraer_reporte_eolico
 
+def es_fecha_mayor_a_uno(fecha_str):
+    try:
+        # Ejemplo: "6/1/2026 12:00:01 AM"
+        # Nos quedamos solo con la fecha "6/1/2026"
+        fecha_solo = fecha_str.split(' ')[0]
+        partes = fecha_solo.split('/')
+        if len(partes) >= 2:
+            val1 = int(partes[0])
+            val2 = int(partes[1])
+            # Si el primer valor es > 12, es el día (DD/MM/YYYY)
+            if val1 > 12:
+                return val1 > 1
+            # Si el segundo valor es > 12, es el día (MM/DD/YYYY)
+            if val2 > 12:
+                return val2 > 1
+            # Si ambos son <= 12, por defecto en el formato US (MM/DD/YYYY) el segundo es el día
+            return val2 > 1
+    except Exception as e:
+        print(f"Error al verificar fecha {fecha_str}: {e}")
+    return True
+
 app = Flask(__name__)
 
 # Configuracion de tu Evolution API
@@ -67,15 +88,18 @@ def webhook():
                 # Aqui llamamos a nuestro robot de Playwright
                 datos = extraer_reporte_generico()
                 
-                if not datos:
-                    enviar_mensaje_whatsapp(remote_jid, "✅ Extraccion terminada. No hay enlaces fuera en este momento.")
+                # Filtrar incidentes con fecha de inicio mayor al día 1 del mes
+                datos_filtrados = [d for d in datos if es_fecha_mayor_a_uno(d.get('Hora de Inicio', ''))]
+                
+                if not datos_filtrados:
+                    enviar_mensaje_whatsapp(remote_jid, "✅ Extraccion terminada. No hay enlaces fuera iniciados despues del dia 1.")
                 else:
-                    # Formatear los datos para que se vean bonitos en WhatsApp
+                    # Formatear los datos para que se vean bonitos en WhatsApp: sitio, tipo de enlace y caido desde
                     respuesta = "*REPORTE DE ENLACES FUERA*\n\n"
-                    for d in datos:
+                    for d in datos_filtrados:
                         respuesta += f"📍 *Sitio:* {d['Sitio']}\n"
-                        respuesta += f"🆔 *Incidente:* {d['Incidente']}\n"
-                        respuesta += f"🕒 *Inicio:* {d['Hora de Inicio']}\n"
+                        respuesta += f"🔌 *Tipo de Enlace:* {d['Tipo de Enlace']}\n"
+                        respuesta += f"⏳ *Caído desde:* {d['Hora de Inicio']}\n"
                         respuesta += "------------------------\n"
                     
                     enviar_mensaje_whatsapp(remote_jid, respuesta)
@@ -90,15 +114,17 @@ def webhook():
                 # Aqui llamamos a nuestro robot de Playwright para eolicos
                 datos = extraer_reporte_eolico()
                 
-                if not datos:
-                    enviar_mensaje_whatsapp(remote_jid, "✅ Extraccion terminada. No hay eolicos fuera en este momento.")
+                # Filtrar incidentes con fecha de inicio mayor al día 1 del mes
+                datos_filtrados = [d for d in datos if es_fecha_mayor_a_uno(d.get('Hora de Inicio', ''))]
+                
+                if not datos_filtrados:
+                    enviar_mensaje_whatsapp(remote_jid, "✅ Extraccion terminada. No hay eolicos fuera iniciados despues del dia 1.")
                 else:
-                    # Formatear los datos para que se vean bonitos en WhatsApp
+                    # Formatear los datos para que se vean bonitos en WhatsApp: sitio y caido desde
                     respuesta = "*REPORTE DE EOLICOS FUERA*\n\n"
-                    for d in datos:
+                    for d in datos_filtrados:
                         respuesta += f"📍 *Sitio:* {d['Sitio']}\n"
-                        respuesta += f"🆔 *Incidente:* {d['Incidente']}\n"
-                        respuesta += f"🕒 *Inicio:* {d['Hora de Inicio']}\n"
+                        respuesta += f"⏳ *Caído desde:* {d['Hora de Inicio']}\n"
                         respuesta += "------------------------\n"
                     
                     enviar_mensaje_whatsapp(remote_jid, respuesta)
