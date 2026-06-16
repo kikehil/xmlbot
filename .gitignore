@@ -31,3 +31,8 @@ test-results/
 /sat-xml-bot/xmls/*
 /sat-bot/public/downloads/documentos/*
 !/sat-bot/public/downloads/documentos/.gitkeep
+
+# Scraper session data
+scraper_generico/sesion_guardada/
+**/sesion_guardada/
+
