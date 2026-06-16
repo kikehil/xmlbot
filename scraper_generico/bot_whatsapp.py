@@ -92,7 +92,7 @@ def webhook():
                 datos_filtrados = [d for d in datos if es_fecha_mayor_a_uno(d.get('Hora de Inicio', ''))]
                 
                 if not datos_filtrados:
-                    enviar_mensaje_whatsapp(remote_jid, "✅ Extraccion terminada. No hay enlaces fuera iniciados despues del dia 1.")
+                    enviar_mensaje_whatsapp(remote_jid, "No hay afectacion de momento")
                 else:
                     # Formatear los datos para que se vean bonitos en WhatsApp: sitio, tipo de enlace y caido desde
                     respuesta = "*REPORTE DE ENLACES FUERA*\n\n"
@@ -118,7 +118,7 @@ def webhook():
                 datos_filtrados = [d for d in datos if es_fecha_mayor_a_uno(d.get('Hora de Inicio', ''))]
                 
                 if not datos_filtrados:
-                    enviar_mensaje_whatsapp(remote_jid, "✅ Extraccion terminada. No hay eolicos fuera iniciados despues del dia 1.")
+                    enviar_mensaje_whatsapp(remote_jid, "No hay afectacion de momento")
                 else:
                     # Formatear los datos para que se vean bonitos en WhatsApp: sitio y caido desde
                     respuesta = "*REPORTE DE EOLICOS FUERA*\n\n"
